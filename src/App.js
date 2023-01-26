@@ -28,7 +28,79 @@ const SummaryTable = ({ summary }) => {
   );
 };
 
+function WorkerView({ data }) {
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [workers, setWorkers] = useState([]);
+  const [tW, settW] = useState(0);
 
+
+  var totalWeight2=0;
+  useEffect(() => {
+    setWorkers(data.map(worker => worker.name));
+   
+  }, [data]);
+
+  useEffect(() => {
+    
+    console.log(selectedWorker);
+    if(selectedWorker){
+      for (let i = 0; i < selectedWorker.dataArray.length; i++) {
+        console.log(selectedWorker.dataArray[i].weight);
+        totalWeight2 += 1*selectedWorker.dataArray[i].weight;
+        console.log(totalWeight2)
+      
+    }
+    settW(totalWeight2);
+    }
+
+
+
+  }, [selectedWorker]);
+
+  function handleSelectChange(event) {
+    const selectedName = event.target.value;
+    const selectedWorkerData = data.find(worker => worker.name === selectedName);
+    setSelectedWorker(selectedWorkerData);
+ 
+  }
+
+  return (
+    <>
+      <select onChange={handleSelectChange}>
+        <option value="">Elige un trabajador</option>
+        {workers.map(worker => (
+          <option key={worker} value={worker}>
+            {worker}
+          </option>
+        ))}
+      </select>
+      {selectedWorker && (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Kilos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedWorker.dataArray.map(day => (
+
+                <tr key={day.date}>
+                  <td>{day.date}</td>
+                  <td>{day.weight}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h4>Kilos Totales : {tW}</h4>
+        </>
+
+
+      )}
+    </>
+  );
+}
 const cheerio = require('cheerio');
 var summary = {};
 var workersArray;
@@ -232,9 +304,9 @@ function App() {
           <option value="general">General</option>
           <option value="specific">Especifico</option>
         </select>
-        {view === 'general' ?  <SummaryTable summary={summary} />: <h1>por trabajador</h1>}
+        {view === 'general' ? <SummaryTable summary={summary} /> : <WorkerView data={workersArray} />}
       </div>
-     
+
     </div>
   );
 }
