@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/blueberrywatery/static/css/main.b4307917.css",
+    "main.js": "/blueberrywatery/static/js/main.3a8e2bed.js",
+    "static/js/787.ff41c1a1.chunk.js": "/blueberrywatery/static/js/787.ff41c1a1.chunk.js",
+    "index.html": "/blueberrywatery/index.html",
+    "main.b4307917.css.map": "/blueberrywatery/static/css/main.b4307917.css.map",
+    "main.3a8e2bed.js.map": "/blueberrywatery/static/js/main.3a8e2bed.js.map",
+    "787.ff41c1a1.chunk.js.map": "/blueberrywatery/static/js/787.ff41c1a1.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b4307917.css",
+    "static/js/main.3a8e2bed.js"
+  ]
+}
