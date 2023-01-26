@@ -34,23 +34,23 @@ function WorkerView({ data }) {
   const [tW, settW] = useState(0);
 
 
-  var totalWeight2=0;
+  var totalWeight2 = 0;
   useEffect(() => {
     setWorkers(data.map(worker => worker.name));
-   
+
   }, [data]);
 
   useEffect(() => {
-    
+
     console.log(selectedWorker);
-    if(selectedWorker){
+    if (selectedWorker) {
       for (let i = 0; i < selectedWorker.dataArray.length; i++) {
         console.log(selectedWorker.dataArray[i].weight);
-        totalWeight2 += 1*selectedWorker.dataArray[i].weight;
+        totalWeight2 += 1 * selectedWorker.dataArray[i].weight;
         console.log(totalWeight2)
-      
-    }
-    settW(totalWeight2);
+
+      }
+      settW(totalWeight2);
     }
 
 
@@ -61,7 +61,7 @@ function WorkerView({ data }) {
     const selectedName = event.target.value;
     const selectedWorkerData = data.find(worker => worker.name === selectedName);
     setSelectedWorker(selectedWorkerData);
- 
+
   }
 
   return (
