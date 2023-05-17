@@ -3,31 +3,56 @@ import './App.css';
 
 import React, { useState, useEffect } from "react";
 
+import { Modal } from 'reactstrap'
+
+const cheerio = require('cheerio');
+var summary = {};
+var workersArray;
+
 const SummaryTable = ({ summary }) => {
   const sortedSummary = Object.keys(summary).sort((a, b) => new Date(a) - new Date(b));
+  var [selectedDayData, setSelectedDayData] = useState({});
+  var [showModal, setShowModal] = useState(false);
 
+  const handleRowClick = dayData => {
+    setSelectedDayData(dayData);
+    setShowModal(true);
+  };
+  const RenderModal = () => {
+    return (
+      showModal && (
+        <Modal>
+          <div>Worker Names: {selectedDayData.workerNames.join(", ")}</div>
+          <div>Worker Weights: {selectedDayData.workerWeights.join(", ")}</div>
+        </Modal>
+      )
+    );
+  };
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Kilos</th>
-          <th>Trabajadores</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedSummary.map((date) => (
-          <tr key={date}>
-            <td>{date}</td>
-            <td>{summary[date].totalWeight}</td>
-            <td>{new Set(summary[date].workers).size}</td>
+    <>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Kilos</th>
+            <th>Trabajadores</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sortedSummary.map((date) => (
+            <tr key={date} onClick={() => handleRowClick(date)}>
+              <td>{date}</td>
+              <td>{summary[date].totalWeight}</td>
+              <td>{new Set(summary[date].workers).size}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <RenderModal />
+    </>
+
   );
 };
-
 function WorkerView({ data }) {
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [workers, setWorkers] = useState([]);
@@ -101,9 +126,6 @@ function WorkerView({ data }) {
     </>
   );
 }
-const cheerio = require('cheerio');
-var summary = {};
-var workersArray;
 function filterByDate(data, date) {
   return data.filter(element => element.date === date);
 }
@@ -117,22 +139,28 @@ function fetchDataInParallel(rutdvArray) {
       body: formdata,
       redirect: 'follow'
     };
-    return fetch("https://cosecha.frutoslaaguada.cl/index.php", requestOptions)
+    return fetch("/index.php", requestOptions)
       .then(response => response.text())
       .then(result => {
         let dataArray = []
         const $ = cheerio.load(result);
         let name = $('h5').text().split(':')[0];
-        $('tr').each(function (i, elem) {
-          let date = $(this).find('td').eq(1).text();
-          let weight = $(this).find('td').eq(4).text();
-          dataArray.push({ date, weight });
-        });
-        dataArray.pop();//last with totals
-        dataArray.shift(); // fisrt empty
-        //console.log(name)
-        //console.log(dataArray)
-        return { name, dataArray };
+        if (name !== "No se encontraron resultados con el RUT ingresado.") {
+          $('tr').each(function (i, elem) {
+            let date = $(this).find('td').eq(1).text();
+            let weight = $(this).find('td').eq(4).text();
+            dataArray.push({ date, weight });
+          });
+          dataArray.pop();//last with totals
+          dataArray.shift(); // fisrt empty
+          //console.log(name)
+          //console.log(dataArray)
+          return { name, dataArray };
+        }
+        else {
+          console.log("no se encuentra " + rutdv)
+        }
+
       });
   });
 
@@ -228,73 +256,12 @@ function App() {
     fetchDataInParallel(rutdvArray).then(data => {
       console.log(data)
       setSummary(data);
-      let filteredData = filterByDate(dataArray, "30/12/2022");
-      console.log(filteredData);
+      //let filteredData = filterByDate(dataArray, "30/12/2022");
+      //console.log(filteredData);
     });
   }, []);
 
-
-  /*
-
-  rutdvArray.forEach(function (rutdv) {
-    var formdata = new FormData();
-    formdata.append("rutdv", rutdv);
-    formdata.append("search", "Buscar");
-    var requestOptions = {
-      method: 'POST',
-      body: formdata,
-      redirect: 'follow'
-    };
-
-    fetch("https://cosecha.frutoslaaguada.cl/index.php", requestOptions)
-      .then(response => response.text())
-      .then(result => {
-        let jsonData = []
-        const $ = cheerio.load(result);
-        let name = $('h5').text().split(':')[0];
-        if (name !== "No se encontraron resultados con el RUT ingresado.") {
-
-          $('tr').each(function (i, elem) {
-            let date = $(this).find('td').eq(1).text();
-            let weight = $(this).find('td').eq(4).text();
-            jsonData.push({ date, weight });
-          });
-          jsonData.pop();// last with the totals
-          jsonData.shift();// fisrt empty
-          let rutdvData = { name: name, data: jsonData };
-          dataArray.push(rutdvData);
-          //console.log(name);
-          //console.log(jsonData);
-        }
-        else {
-          console.log("no se encuentra " + rutdv)
-        }
-
-      })
-      .then(() => {
-        dataArray.forEach(function (rutdvData) {
-          rutdvData.data.forEach(function (dateWeight) {
-            if (!summary[dateWeight.date]) {
-              summary[dateWeight.date] = 0;
-            }
-            summary[dateWeight.date] += parseFloat(dateWeight.weight);
-            summary.total += parseFloat(dateWeight.weight);
-          });
-        });
-      }
-
-      )
-      .catch(error => console.log('error', error));
-  });
-  console.log(dataArray)
-*/
-  //18 154701
-
   console.log(summary);
-
-
-
-
   //console.log(requestOptions)
 
   return (
