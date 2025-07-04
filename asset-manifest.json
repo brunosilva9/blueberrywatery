@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/blueberrywatery/static/css/main.0df211aa.css",
-    "main.js": "/blueberrywatery/static/js/main.99ed5bc5.js",
-    "static/js/787.ff41c1a1.chunk.js": "/blueberrywatery/static/js/787.ff41c1a1.chunk.js",
+    "main.css": "/blueberrywatery/static/css/main.365e811b.css",
+    "main.js": "/blueberrywatery/static/js/main.be3e4dec.js",
+    "static/js/453.a1b01168.chunk.js": "/blueberrywatery/static/js/453.a1b01168.chunk.js",
     "index.html": "/blueberrywatery/index.html",
-    "main.0df211aa.css.map": "/blueberrywatery/static/css/main.0df211aa.css.map",
-    "main.99ed5bc5.js.map": "/blueberrywatery/static/js/main.99ed5bc5.js.map",
-    "787.ff41c1a1.chunk.js.map": "/blueberrywatery/static/js/787.ff41c1a1.chunk.js.map"
+    "main.365e811b.css.map": "/blueberrywatery/static/css/main.365e811b.css.map",
+    "main.be3e4dec.js.map": "/blueberrywatery/static/js/main.be3e4dec.js.map",
+    "453.a1b01168.chunk.js.map": "/blueberrywatery/static/js/453.a1b01168.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.0df211aa.css",
-    "static/js/main.99ed5bc5.js"
+    "static/css/main.365e811b.css",
+    "static/js/main.be3e4dec.js"
   ]
 }
