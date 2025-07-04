@@ -1,7 +1,7 @@
 {
   "homepage": "https://brunosilva9.github.io/blueberrywatery/",
   "name": "blueberrywatery",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "proxy": "https://cosecha.frutoslaaguada.cl/",
   "private": false,
   "dependencies": {
@@ -50,6 +50,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "gh-pages": "^5.0.0"
+    "autoprefixer": "^10.4.21",
+    "gh-pages": "^5.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11"
   }
 }

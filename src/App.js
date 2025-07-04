@@ -1,36 +1,39 @@
-
 import './App.css';
-
-import React, { useState, useEffect } from "react";
-
-import { Modal } from 'reactstrap'
-
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Modal } from 'reactstrap';
 const cheerio = require('cheerio');
-var summary = {};
-var workersArray;
 
+// Componente para mostrar detalles del día
+const DayDetailsModal = ({ isOpen, toggle, date, workerNames, totalWeight }) => (
+  <Modal isOpen={isOpen} toggle={toggle}>
+    <div className="modal-content">
+      <h5>Detalle - {date}</h5>
+      <p><strong>Trabajadores:</strong> {workerNames?.join(", ")}</p>
+      <p><strong>Kilos totales:</strong> {totalWeight.toFixed(2)}</p>
+      <button className="close-button" onClick={toggle}>Cerrar</button>
+    </div>
+  </Modal>
+);
+
+// Componente para la tabla resumen
 const SummaryTable = ({ summary }) => {
-  const sortedSummary = Object.keys(summary).sort((a, b) => new Date(a) - new Date(b));
-  var [selectedDayData, setSelectedDayData] = useState({});
-  var [showModal, setShowModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
 
-  const handleRowClick = dayData => {
-    setSelectedDayData(dayData);
-    setShowModal(true);
-  };
-  const RenderModal = () => {
-    return (
-      showModal && (
-        <Modal>
-          <div>Worker Names: {selectedDayData.workerNames.join(", ")}</div>
-          <div>Worker Weights: {selectedDayData.workerWeights.join(", ")}</div>
-        </Modal>
-      )
-    );
-  };
+  // Memoizar el cálculo de fechas ordenadas
+  const sortedDates = useMemo(() => 
+    Object.keys(summary).sort((a, b) => new Date(a) - new Date(b)), 
+    [summary]
+  );
+
+  // Memoizar el cálculo de trabajadores únicos por día
+  const getUniqueWorkersCount = useCallback((workers) => 
+    new Set(workers).size,
+    []
+  );
+
   return (
     <>
-      <table>
+      <table className="summary-table">
         <thead>
           <tr>
             <th>Fecha</th>
@@ -39,68 +42,61 @@ const SummaryTable = ({ summary }) => {
           </tr>
         </thead>
         <tbody>
-          {sortedSummary.map((date) => (
-            <tr key={date} onClick={() => handleRowClick(date)}>
+          {sortedDates.map((date) => (
+            <tr key={date} onClick={() => setSelectedDay(date)}>
               <td>{date}</td>
-              <td>{summary[date].totalWeight}</td>
-              <td>{new Set(summary[date].workers).size}</td>
+              <td>{summary[date].totalWeight.toFixed(2)}</td>
+              <td>{getUniqueWorkersCount(summary[date].workers)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <RenderModal />
-    </>
 
+      {selectedDay && (
+        <DayDetailsModal
+          isOpen={!!selectedDay}
+          toggle={() => setSelectedDay(null)}
+          date={selectedDay}
+          workerNames={summary[selectedDay].workers}
+          totalWeight={summary[selectedDay].totalWeight}
+        />
+      )}
+    </>
   );
 };
-function WorkerView({ data }) {
+
+// Componente para vista de trabajador
+const WorkerView = ({ data }) => {
   const [selectedWorker, setSelectedWorker] = useState(null);
-  const [workers, setWorkers] = useState([]);
-  const [tW, settW] = useState(0);
 
+  // Calcular total de kilos
+  const totalWeight = useMemo(() => 
+    selectedWorker?.dataArray.reduce((sum, day) => sum + parseFloat(day.weight), 0) || 0,
+    [selectedWorker]
+  );
 
-  var totalWeight2 = 0;
-  useEffect(() => {
-    setWorkers(data.map(worker => worker.name));
-
-  }, [data]);
-
-  useEffect(() => {
-
-    console.log(selectedWorker);
-    if (selectedWorker) {
-      for (let i = 0; i < selectedWorker.dataArray.length; i++) {
-        console.log(selectedWorker.dataArray[i].weight);
-        totalWeight2 += 1 * selectedWorker.dataArray[i].weight;
-        console.log(totalWeight2)
-
-      }
-      settW(totalWeight2);
-    }
-
-
-
-  }, [selectedWorker]);
-
-  function handleSelectChange(event) {
-    const selectedName = event.target.value;
-    const selectedWorkerData = data.find(worker => worker.name === selectedName);
-    setSelectedWorker(selectedWorkerData);
-
-  }
+  const handleSelectChange = (e) => {
+    const worker = data.find(w => w.name === e.target.value);
+    setSelectedWorker(worker);
+  };
 
   return (
-    <>
-      <select onChange={handleSelectChange}>
-        <option value="">Elige un trabajador</option>
-        {workers.map(worker => (
-          <option key={worker} value={worker}>
-            {worker}
+    <div className="worker-view">
+      <select 
+        onChange={handleSelectChange}
+        className="worker-select"
+        defaultValue=""
+      >
+        <option value="" disabled>Elige un trabajador</option>
+        {data.map(worker => (
+          <option key={worker.name} value={worker.name}>
+            {worker.name}
           </option>
         ))}
       </select>
+
       {selectedWorker && (
-        <>
+        <div className="worker-details">
           <table>
             <thead>
               <tr>
@@ -109,128 +105,151 @@ function WorkerView({ data }) {
               </tr>
             </thead>
             <tbody>
-              {selectedWorker.dataArray.map(day => (
-
-                <tr key={day.date}>
+              {selectedWorker.dataArray.map((day, i) => (
+                <tr key={`${day.date}-${i}`}>
                   <td>{day.date}</td>
                   <td>{day.weight}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <h4>Kilos Totales : {tW}</h4>
-        </>
-
-
+          <div className="total-weight">
+            Kilos Totales: {totalWeight.toFixed(2)}
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
-}
-function filterByDate(data, date) {
-  return data.filter(element => element.date === date);
-}
-function fetchDataInParallel(rutdvArray) {
-  let promiseArray = rutdvArray.map((rutdv) => {
-    let formdata = new FormData();
-    formdata.append("rutdv", rutdv);
-    formdata.append("search", "Buscar");
-    let requestOptions = {
-      method: 'POST',
-      body: formdata,
-      redirect: 'follow'
-    };
-    return fetch("/index.php", requestOptions)
-      .then(response => response.text())
-      .then(result => {
-        let dataArray = []
-        const $ = cheerio.load(result);
-        let name = $('h5').text().split(':')[0];
-        if (name !== "No se encontraron resultados con el RUT ingresado.") {
-          $('tr').each(function (i, elem) {
-            let date = $(this).find('td').eq(1).text();
-            let weight = $(this).find('td').eq(4).text();
-            dataArray.push({ date, weight });
-          });
-          dataArray.pop();//last with totals
-          dataArray.shift(); // fisrt empty
-          //console.log(name)
-          //console.log(dataArray)
-          return { name, dataArray };
-        }
-        else {
-          console.log("no se encuentra " + rutdv)
-        }
+};
 
-      });
-  });
-
-  return Promise.all(promiseArray).then(results => {
-
-    results.forEach(result => {
-      result.dataArray.forEach(element => {
-        if (!summary[element.date]) {
-          summary[element.date] = {
-            totalWeight: 0,
-            workers: []
-          };
-        }
-        summary[element.date].totalWeight += parseFloat(element.weight);
-        summary[element.date].workers.push(result.name);
-      });
-    });
-    workersArray = results;
-    console.log(workersArray);
-    return summary;
-  });
-}
-function App() {
-  const [view, setView] = useState('general');
-
-  const handleViewChange = (selectedView) => {
-    setView(selectedView);
+// Función para procesar datos de trabajador
+const processWorkerData = (html, rutdv) => {
+  const $ = cheerio.load(html);
+  const name = $('h5').text().split(':')[0].trim();
+  
+  if (name === "No se encontraron resultados con el RUT ingresado.") {
+    console.warn(`No se encuentra trabajador con RUT: ${rutdv}`);
+    return null;
   }
-  const rutdvArray = [
-    '27158504-7',
-    '26036209-7',
-    '25852344-K',
-    '26802354-2',
-    '33738955-4',
-    '27580186-0',
-    '33486581-9',
-    '33512975-K',
-    '33625537-6',
 
-  ]
-  let dataArray = [];
-  //var summary = { total: 0 };
-  //fetchDataInParallel(rutdvArray);
+  const dataArray = [];
+  $('tr').each(function() {
+    const date = $(this).find('td').eq(1).text().trim();
+    const weight = $(this).find('td').eq(4).text().trim();
+    if (date && weight) dataArray.push({ date, weight });
+  });
 
-  const [summary, setSummary] = useState({});
+  return { 
+    name, 
+    dataArray: dataArray // Eliminar cabecera y pie
+  };
+};
+
+// Hook personalizado para manejar datos
+const useWorkerData = (rutdvArray) => {
+  const [state, setState] = useState({
+    summary: {},
+    workers: [],
+    loading: true,
+    error: null
+  });
+
+  const fetchData = useCallback(async () => {
+    try {
+      const requests = rutdvArray.map(rutdv => {
+        const formData = new FormData();
+        formData.append("rutdv", rutdv);
+        formData.append("search", "Buscar");
+        
+        return fetch("/index.php", {
+          method: 'POST',
+          body: formData
+        })
+          .then(r => r.text())
+          .then(html => processWorkerData(html, rutdv));
+      });
+
+      const results = await Promise.all(requests);
+      const validResults = results.filter(Boolean);
+
+      const newSummary = {};
+      validResults.forEach(worker => {
+        worker.dataArray.forEach(day => {
+          if (!newSummary[day.date]) {
+            newSummary[day.date] = {
+              totalWeight: 0,
+              workers: []
+            };
+          }
+          newSummary[day.date].totalWeight += parseFloat(day.weight) || 0;
+          newSummary[day.date].workers.push(worker.name);
+        });
+      });
+
+      setState({
+        summary: newSummary,
+        workers: validResults,
+        loading: false,
+        error: null
+      });
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: "Error al cargar datos"
+      }));
+      console.error("Fetch error:", error);
+    }
+  }, [rutdvArray]);
 
   useEffect(() => {
-    fetchDataInParallel(rutdvArray).then(data => {
-      console.log(data)
-      setSummary(data);
-      //let filteredData = filterByDate(dataArray, "30/12/2022");
-      //console.log(filteredData);
-    });
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
-  console.log(summary);
-  //console.log(requestOptions)
+  return { ...state, refetch: fetchData };
+};
+
+// Componente principal
+const App = () => {
+  const [view, setView] = useState('general');
+  
+  // Memoizar el array de RUTs para evitar recreación
+  const rutdvArray = useMemo(() => [
+    '10594465-9',
+    '11429466-7',
+    '11594901-2',
+    '11707665-2'
+  ], []);
+
+  const { summary, workers, loading, error } = useWorkerData(rutdvArray);
+
+  if (loading) return <div className="loading">Cargando datos...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="App">
-      <div>
-        <select value={view} onChange={(e) => handleViewChange(e.target.value)}>
-          <option value="general">General</option>
-          <option value="specific">Especifico</option>
-        </select>
-        {view === 'general' ? <SummaryTable summary={summary} /> : <WorkerView data={workersArray} />}
-      </div>
+      <div className="app-container">
+        <div className="view-selector">
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value)}
+            aria-label="Seleccionar vista"
+          >
+            <option value="general">Vista General</option>
+            <option value="specific">Vista por Trabajador</option>
+          </select>
+        </div>
 
+        <div className="view-content">
+          {view === 'general' ? (
+            <SummaryTable summary={summary} />
+          ) : (
+            <WorkerView data={workers} />
+          )}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default App;
