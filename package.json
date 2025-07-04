@@ -2,7 +2,6 @@
   "homepage": "https://brunosilva9.github.io/blueberrywatery/",
   "name": "blueberrywatery",
   "version": "0.1.2",
-  "proxy": "https://cosecha.frutoslaaguada.cl/",
   "private": false,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",

@@ -20,13 +20,13 @@ const SummaryTable = ({ summary }) => {
   const [selectedDay, setSelectedDay] = useState(null);
 
   // Memoizar el cálculo de fechas ordenadas
-  const sortedDates = useMemo(() => 
-    Object.keys(summary).sort((a, b) => new Date(a) - new Date(b)), 
+  const sortedDates = useMemo(() =>
+    Object.keys(summary).sort((a, b) => new Date(a) - new Date(b)),
     [summary]
   );
 
   // Memoizar el cálculo de trabajadores únicos por día
-  const getUniqueWorkersCount = useCallback((workers) => 
+  const getUniqueWorkersCount = useCallback((workers) =>
     new Set(workers).size,
     []
   );
@@ -70,7 +70,7 @@ const WorkerView = ({ data }) => {
   const [selectedWorker, setSelectedWorker] = useState(null);
 
   // Calcular total de kilos
-  const totalWeight = useMemo(() => 
+  const totalWeight = useMemo(() =>
     selectedWorker?.dataArray.reduce((sum, day) => sum + parseFloat(day.weight), 0) || 0,
     [selectedWorker]
   );
@@ -82,7 +82,7 @@ const WorkerView = ({ data }) => {
 
   return (
     <div className="worker-view">
-      <select 
+      <select
         onChange={handleSelectChange}
         className="worker-select"
         defaultValue=""
@@ -126,21 +126,21 @@ const WorkerView = ({ data }) => {
 const processWorkerData = (html, rutdv) => {
   const $ = cheerio.load(html);
   const name = $('h5').text().split(':')[0].trim();
-  
+
   if (name === "No se encontraron resultados con el RUT ingresado.") {
     console.warn(`No se encuentra trabajador con RUT: ${rutdv}`);
     return null;
   }
 
   const dataArray = [];
-  $('tr').each(function() {
+  $('tr').each(function () {
     const date = $(this).find('td').eq(1).text().trim();
     const weight = $(this).find('td').eq(4).text().trim();
     if (date && weight) dataArray.push({ date, weight });
   });
 
-  return { 
-    name, 
+  return {
+    name,
     dataArray: dataArray // Eliminar cabecera y pie
   };
 };
@@ -160,12 +160,9 @@ const useWorkerData = (rutdvArray) => {
         const formData = new FormData();
         formData.append("rutdv", rutdv);
         formData.append("search", "Buscar");
-        
-        return fetch("/index.php", {
-          method: 'POST',
-          body: formData
-        })
-          .then(r => r.text())
+
+        return fetch(`https://blueberry-proxy.onrender.com/scrape?rutdv=${rutdv}`)
+          .then(res => res.text())
           .then(html => processWorkerData(html, rutdv));
       });
 
@@ -212,7 +209,7 @@ const useWorkerData = (rutdvArray) => {
 // Componente principal
 const App = () => {
   const [view, setView] = useState('general');
-  
+
   // Memoizar el array de RUTs para evitar recreación
   const rutdvArray = useMemo(() => [
     '10594465-9',
