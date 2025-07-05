@@ -3,7 +3,27 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Modal } from 'reactstrap';
 const cheerio = require('cheerio');
 
-// Componente para mostrar detalles del día
+const defaultRutdvArray = [
+  '10594465-9',
+  '11429466-7',
+  '11594901-2',
+  '11707665-2'
+];
+
+const usePersistedRutdvArray = () => {
+  const [rutdvArray, setRutdvArray] = useState(() => {
+    const saved = localStorage.getItem('rutdvArray');
+    return saved ? JSON.parse(saved) : defaultRutdvArray;
+  });
+
+  const updateRutdvArray = (newArray) => {
+    setRutdvArray(newArray);
+    localStorage.setItem('rutdvArray', JSON.stringify(newArray));
+  };
+
+  return [rutdvArray, updateRutdvArray];
+};
+
 const DayDetailsModal = ({ isOpen, toggle, date, workerNames, totalWeight }) => (
   <Modal isOpen={isOpen} toggle={toggle}>
     <div className="modal-content">
@@ -15,21 +35,15 @@ const DayDetailsModal = ({ isOpen, toggle, date, workerNames, totalWeight }) => 
   </Modal>
 );
 
-// Componente para la tabla resumen
 const SummaryTable = ({ summary }) => {
   const [selectedDay, setSelectedDay] = useState(null);
 
-  // Memoizar el cálculo de fechas ordenadas
   const sortedDates = useMemo(() =>
     Object.keys(summary).sort((a, b) => new Date(a) - new Date(b)),
     [summary]
   );
 
-  // Memoizar el cálculo de trabajadores únicos por día
-  const getUniqueWorkersCount = useCallback((workers) =>
-    new Set(workers).size,
-    []
-  );
+  const getUniqueWorkersCount = useCallback((workers) => new Set(workers).size, []);
 
   return (
     <>
@@ -65,11 +79,9 @@ const SummaryTable = ({ summary }) => {
   );
 };
 
-// Componente para vista de trabajador
 const WorkerView = ({ data }) => {
   const [selectedWorker, setSelectedWorker] = useState(null);
 
-  // Calcular total de kilos
   const totalWeight = useMemo(() =>
     selectedWorker?.dataArray.reduce((sum, day) => sum + parseFloat(day.weight), 0) || 0,
     [selectedWorker]
@@ -122,7 +134,6 @@ const WorkerView = ({ data }) => {
   );
 };
 
-// Función para procesar datos de trabajador
 const processWorkerData = (html, rutdv) => {
   const $ = cheerio.load(html);
   const name = $('h5').text().split(':')[0].trim();
@@ -141,11 +152,10 @@ const processWorkerData = (html, rutdv) => {
 
   return {
     name,
-    dataArray: dataArray // Eliminar cabecera y pie
+    dataArray
   };
 };
 
-// Hook personalizado para manejar datos
 const useWorkerData = (rutdvArray) => {
   const [state, setState] = useState({
     summary: {},
@@ -156,11 +166,8 @@ const useWorkerData = (rutdvArray) => {
 
   const fetchData = useCallback(async () => {
     try {
+      setState(prev => ({ ...prev, loading: true }));
       const requests = rutdvArray.map(rutdv => {
-        const formData = new FormData();
-        formData.append("rutdv", rutdv);
-        formData.append("search", "Buscar");
-
         return fetch(`https://blueberry-proxy.onrender.com/scrape?rutdv=${rutdv}`)
           .then(res => res.text())
           .then(html => processWorkerData(html, rutdv));
@@ -206,17 +213,23 @@ const useWorkerData = (rutdvArray) => {
   return { ...state, refetch: fetchData };
 };
 
-// Componente principal
 const App = () => {
   const [view, setView] = useState('general');
+  const [rutdvArray, setRutdvArray] = usePersistedRutdvArray();
+  const [draftRutdv, setDraftRutdv] = useState(rutdvArray.join(', '));
 
-  // Memoizar el array de RUTs para evitar recreación
-  const rutdvArray = useMemo(() => [
-    '10594465-9',
-    '11429466-7',
-    '11594901-2',
-    '11707665-2'
-  ], []);
+  const handleTextareaChange = (e) => {
+    setDraftRutdv(e.target.value);
+  };
+
+  const handleUpdateClick = () => {
+    const cleanedArray = draftRutdv
+      .split(',')
+      .map(rut => rut.replace(/[.'"]/g, '').trim())  // 💥 Aquí limpiamos solo al actualizar
+      .filter(Boolean);
+    setRutdvArray(cleanedArray);
+    setDraftRutdv(cleanedArray.join(', ')); // Mostrar limpio en textarea
+  };
 
   const { summary, workers, loading, error } = useWorkerData(rutdvArray);
 
@@ -226,6 +239,24 @@ const App = () => {
   return (
     <div className="App">
       <div className="app-container">
+
+        <div className="rut-editor">
+          <label>
+            Edita RUTs (separados por coma):
+            <textarea
+              value={draftRutdv}
+              onChange={handleTextareaChange}
+              rows={4}
+              style={{ width: "100%" }}
+              spellCheck={false}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+            />
+          </label>
+          <button onClick={handleUpdateClick}>Actualizar Datos</button>
+        </div>
+
         <div className="view-selector">
           <select
             value={view}
